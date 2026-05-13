@@ -125,19 +125,25 @@ export function SkillsPanel({ skills, availablePP, availablePT, talents, onUpgra
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
           {talents.length === 0 ? (
               <p className="text-mono" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>NENHUM TALENTO REGISTRADO.</p>
-          ) : (
-            talents.map((talent, idx) => (
+          ) : (() => {
+            const grouped = talents.reduce((acc, t) => {
+              acc[t] = (acc[t] || 0) + 1;
+              return acc;
+            }, {});
+
+            return Object.entries(grouped).map(([name, count], idx) => (
               <div key={idx} style={{ 
                 background: 'rgba(255, 255, 0, 0.1)', 
                 border: '1px solid var(--neon-yellow)', 
                 padding: '2px 8px', 
                 fontSize: '0.7rem',
-                color: 'var(--neon-yellow)'
+                color: 'var(--neon-yellow)',
+                cursor: 'pointer'
               }} className="text-mono">
-                {talent}
+                {name}{count > 1 ? `_v${count}` : ''}
               </div>
-            ))
-          )}
+            ));
+          })()}
         </div>
 
         {availablePT > 0 && (

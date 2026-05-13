@@ -1,103 +1,167 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export function CyberDie({ rolling, value, sides = 20 }) {
-  // Cores de Avernus
-  const primaryColor = sides === 20 ? 'var(--neon-pink)' : 'var(--neon-cyan)';
-  
+const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+const DIGIT_HEIGHT = 50; // Reduzido de 70
+
+function SlotDigit({ value, rolling }) {
   return (
-    <div style={{ 
-      width: '80px', 
-      height: '80px', 
-      margin: '1.5rem auto', 
+    <div style={{
+      width: '40px', // Reduzido de 50
+      height: `${DIGIT_HEIGHT}px`,
+      overflow: 'hidden',
       position: 'relative',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
     }}>
       <motion.div
         animate={rolling ? {
-          rotateX: [0, 360, 720],
-          rotateY: [0, 360, 720],
-          scale: [1, 1.2, 1],
+          y: [0, -DIGIT_HEIGHT * 9],
         } : {
-          rotateX: 0,
-          rotateY: 0,
-          scale: 1,
+          y: -value * DIGIT_HEIGHT
         }}
         transition={rolling ? {
-          duration: 0.6,
+          duration: 0.15,
           repeat: Infinity,
           ease: "linear"
         } : {
-          duration: 0.5,
-          type: "spring"
+          type: "spring",
+          stiffness: 120,
+          damping: 20
         }}
         style={{
-          width: '100%',
-          height: '100%',
-          transformStyle: 'preserve-3d',
-          position: 'relative'
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
         }}
       >
-        {sides === 20 ? (
-          // SVG de Icosaedro (d20) Wireframe
-          <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', filter: `drop-shadow(0 0 5px ${primaryColor})` }}>
-            <path
-              d="M50 5 L95 30 L95 70 L50 95 L5 70 L5 30 Z"
-              fill="rgba(0,0,0,0.6)"
-              stroke={primaryColor}
-              strokeWidth="2"
-            />
-            <path d="M50 5 L50 95 M5 30 L95 30 M5 70 L95 70 M5 30 L50 95 L95 30 M5 70 L50 5 L95 70" 
-              fill="none" 
-              stroke={primaryColor} 
-              strokeWidth="1" 
-              strokeOpacity="0.5" 
-            />
-          </svg>
-        ) : (
-          // Cubo (d6) Wireframe
-          <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', filter: `drop-shadow(0 0 5px ${primaryColor})` }}>
-             <rect x="20" y="20" width="60" height="60" fill="rgba(0,0,0,0.6)" stroke={primaryColor} strokeWidth="2" />
-             <path d="M20 20 L35 10 L75 10 L60 20 M75 10 L75 50 L60 60" fill="none" stroke={primaryColor} strokeWidth="2" />
-          </svg>
-        )}
-
-        {/* Valor Resultante */}
-        {!rolling && value && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-mono"
+        {DIGITS.map((d) => (
+          <div
+            key={d}
             style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              fontSize: '1.4rem',
-              color: primaryColor,
-              textShadow: `0 0 10px ${primaryColor}`,
-              zIndex: 10
+              height: `${DIGIT_HEIGHT}px`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2rem', // Reduzido de 3rem
+              fontWeight: '900',
+              color: 'white',
+              fontFamily: 'var(--font-mono)',
+              textShadow: '0 0 10px rgba(255, 255, 255, 0.5)'
             }}
           >
-            {value}
-          </motion.div>
-        )}
+            {d}
+          </div>
+        ))}
       </motion.div>
+    </div>
+  );
+}
 
-      {/* Efeito de Scanline no dado */}
+export function CyberDie({ rolling, value, sides = 20, discarded = false }) {
+  const displayValue = value !== null ? value.toString().padStart(2, '0') : '00';
+  const digits = displayValue.split('').map(Number);
+  const primaryColor = discarded ? 'rgba(255, 0, 85, 0.5)' : (sides === 20 ? 'var(--neon-pink)' : 'var(--neon-cyan)');
+
+  return (
+    <div style={{
+      margin: '1rem auto',
+      position: 'relative',
+      width: 'fit-content',
+      opacity: discarded ? 0.4 : 1,
+      transform: discarded ? 'scale(0.85)' : 'scale(1)',
+      transition: 'all 0.4s ease'
+    }}>
+      {/* Outer Industrial Frame */}
       <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        background: 'linear-gradient(transparent 50%, rgba(255,255,255,0.05) 50%)',
-        backgroundSize: '100% 4px',
-        pointerEvents: 'none',
-        borderRadius: '50%'
-      }} />
+        padding: '6px',
+        background: 'rgba(5, 5, 5, 0.9)',
+        border: `2px solid ${primaryColor}`,
+        borderRadius: '4px',
+        boxShadow: discarded ? 'none' : `0 0 20px ${primaryColor}44, inset 0 0 10px ${primaryColor}22`,
+        position: 'relative',
+        clipPath: 'polygon(5% 0, 95% 0, 100% 10%, 100% 90%, 95% 100%, 5% 100%, 0 90%, 0 10%)'
+      }}>
+        
+        {/* Inner Tech-Slot Display */}
+        <div style={{
+          display: 'flex',
+          background: 'rgba(0, 0, 0, 1)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          position: 'relative',
+          gap: '2px'
+        }}>
+          <SlotDigit value={digits[0]} rolling={rolling} />
+          
+          <div style={{ 
+            width: '1px', 
+            height: '100%', 
+            background: 'linear-gradient(transparent, rgba(255,255,255,0.2), transparent)',
+            position: 'absolute',
+            left: '50%',
+            zIndex: 5
+          }} />
+          
+          <SlotDigit value={digits[1]} rolling={rolling} />
+
+          {/* ELIMINATED OVERLAY */}
+          {discarded && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'rgba(255, 0, 85, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 20
+            }}>
+              <div style={{
+                position: 'absolute',
+                width: '120%',
+                height: '2px',
+                background: 'var(--neon-pink)',
+                transform: 'rotate(45deg)',
+                boxShadow: '0 0 10px var(--neon-pink)'
+              }} />
+              <div style={{
+                position: 'absolute',
+                width: '120%',
+                height: '2px',
+                background: 'var(--neon-pink)',
+                transform: 'rotate(-45deg)',
+                boxShadow: '0 0 10px var(--neon-pink)'
+              }} />
+            </div>
+          )}
+
+          {/* Glass Reflection & Scanlines Overlay */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: `
+              linear-gradient(rgba(255,255,255,0.05) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.05) 100%),
+              repeating-linear-gradient(transparent 0px, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 4px)
+            `,
+            pointerEvents: 'none',
+            zIndex: 10
+          }} />
+        </div>
+      </div>
+
+      {/* Small Label */}
+      <div className="text-mono" style={{ 
+        marginTop: '0.4rem',
+        fontSize: '0.5rem', 
+        color: primaryColor, 
+        textAlign: 'center',
+        textDecoration: discarded ? 'line-through' : 'none'
+      }}>
+        {discarded ? 'DISCARDED' : (rolling ? 'ROLLING' : `D${sides}`)}
+      </div>
     </div>
   );
 }

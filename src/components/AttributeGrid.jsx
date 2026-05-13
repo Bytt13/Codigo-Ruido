@@ -1,4 +1,7 @@
+import React from 'react';
+import { Dumbbell, Target, Wind, Shield, Brain, Book, Users } from 'lucide-react';
 import * as Formulas from '../utils/formulas';
+
 
 const Attribute = ({ icon: Icon, name, value, per, onRoll, onUpgrade, availablePA }) => {
   const cost = Formulas.getPACost(value);
@@ -36,7 +39,7 @@ const Attribute = ({ icon: Icon, name, value, per, onRoll, onUpgrade, availableP
           +{cost}PA
         </button>
       )}
-      <Icon size={24} color={name === 'VIG' || name === 'FOR' ? 'var(--neon-pink)' : 'var(--neon-cyan)'} />
+      <Icon size={24} color={value === 0 ? 'var(--neon-pink)' : 'var(--neon-cyan)'} />
       <span className="header-futuristic" style={{ fontSize: '0.7rem' }}>{name}</span>
       <span className="text-mono" style={{ fontSize: '1.5rem', color: 'var(--neon-cyan)' }}>{value}</span>
       <span className="text-mono" style={{ fontSize: '0.6rem', color: 'var(--text-dim)' }}>PER: +{per}</span>

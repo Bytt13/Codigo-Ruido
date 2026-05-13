@@ -18,7 +18,10 @@ export const calculateRM = (int, exp) => 10 + int + exp;
 
 export const calculatePE = (exp) => (exp * 10) + 5;
 
-export const calculateCA = (vig, agi, armadura = 0) => 10 + Math.max(vig, agi) + armadura;
+export const calculateCA = (vig, agi, armadura = 0) => {
+  const attributeBonus = Math.max(0, Math.max(vig, agi) - 1);
+  return 10 + attributeBonus + armadura;
+};
 
 export const getPACost = (currentValue) => {
   // De 3 para 4 custa 2 PA, os demais custam 1.
