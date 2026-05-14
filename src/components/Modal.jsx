@@ -62,7 +62,7 @@ export function Modal({ isOpen, onClose, title, children, width = '600px', heigh
               borderBottom: '1px solid rgba(0, 243, 255, 0.3)',
               paddingBottom: '0.5rem'
             }}>
-              <h2 className="header-futuristic" style={{ fontSize: '1.2rem', margin: 0 }}>{title}</h2>
+              <h2 className="header-futuristic" style={{ fontSize: '1.2rem', margin: 0, flex: 1, marginRight: '1rem' }}>{title}</h2>
               <button 
                 onClick={onClose}
                 style={{

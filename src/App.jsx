@@ -36,12 +36,33 @@ const LEVEL_REWARDS = {
   20: { PA: 1, PP: 3,  PT: 3 },
 };
 
+const DEFAULT_ATTRIBUTES = {
+  FOR: 1, DES: 1, AGI: 1, VIG: 1, INT: 1, EXP: 1, CAR: 1
+};
+
+const DEFAULT_SKILLS = {
+  'Atletismo': 0, 'Acrobacia': 0, 'Prestidigitação': 0, 'Furtividade': 0,
+  'Dirigir': 0, 'Reflexos': 2, 'Iniciativa': 3, 'Fortitude': 0,
+  'Tecnologia': 5, 'Ciências': 0, 'História': 0, 'Geografia': 0,
+  'Tática': 0, 'Medicina': 0, 'Investigação': 0, 'Percepção': 0,
+  'Intuição': 0, 'Malandragem': 0, 'Manipulação': 0, 'Intimidação': 0
+};
+
+const DEFAULT_BIO = {
+  history: '',
+  objective: '',
+  affiliation: '',
+  appearance: '',
+  relations: []
+};
+
 function App() {
   const [hasCharacter, setHasCharacter] = useState(false);
   const [activeTab, setActiveTab] = useState('DATABASE');
   const [commandInput, setCommandInput] = useState('');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isGenesisPointsModalOpen, setIsGenesisPointsModalOpen] = useState(false);
+  const [isZeroAttributeModalOpen, setIsZeroAttributeModalOpen] = useState(false);
   const [loginData, setLoginData] = useState({ name: '', password: '', startingLevel: 1 });
 
   const [currentUser, setCurrentUser] = useState(null);
@@ -61,28 +82,14 @@ function App() {
   const [activeModal, setActiveModal] = useState(null);
 
   // Bio Data
-  const [bio, setBio] = useState({
-    history: '',
-    objective: '',
-    affiliation: '',
-    appearance: '',
-    relations: []
-  });
+  const [bio, setBio] = useState(DEFAULT_BIO);
 
   
   // Atributos Biológicos (Gênese: 1 em seis, 0 em um)
-  const [attributes, setAttributes] = useState({
-    FOR: 1, DES: 1, AGI: 1, VIG: 1, INT: 1, EXP: 0, CAR: 1
-  });
+  const [attributes, setAttributes] = useState(DEFAULT_ATTRIBUTES);
 
   // Perícias (Bônus numérico +0 a +20)
-  const [skillBonuses, setSkillBonuses] = useState({
-    'Atletismo': 0, 'Acrobacia': 0, 'Prestidigitação': 0, 'Furtividade': 0,
-    'Dirigir': 0, 'Reflexos': 2, 'Iniciativa': 3, 'Fortitude': 0,
-    'Tecnologia': 5, 'Ciências': 0, 'História': 0, 'Geografia': 0,
-    'Tática': 0, 'Medicina': 0, 'Investigação': 0, 'Percepção': 0,
-    'Intuição': 0, 'Malandragem': 0, 'Manipulação': 0, 'Intimidação': 0
-  });
+  const [skillBonuses, setSkillBonuses] = useState(DEFAULT_SKILLS);
 
   const [logs, setLogs] = useState([
     { id: 2, text: "BEM-VINDO A AVERNUS, SOBREVIVENTE.", type: "system" }
@@ -148,19 +155,24 @@ function App() {
     } else {
       // Calculate cumulative starting points for new character
       let startPA = 0, startPP = 0, startPT = 0;
-      for (let i = 1; i <= loginData.startingLevel; i++) {
+      const startingLevel = Math.min(20, loginData.startingLevel);
+      for (let i = 1; i <= startingLevel; i++) {
         const r = LEVEL_REWARDS[i];
         startPA += r.PA;
         startPP += r.PP;
         startPT += r.PT;
       }
       
-      setLevel(loginData.startingLevel);
+      setLevel(startingLevel);
       setXp(0);
       setPoints({ PA: startPA, PP: startPP, PT: startPT });
-      addLog(`GÊNESE INICIADA: NOVO REGISTRO NÍVEL ${loginData.startingLevel} PARA ${loginData.name.toUpperCase()}.`, "system");
+      setAttributes(DEFAULT_ATTRIBUTES);
+      setSkillBonuses(DEFAULT_SKILLS);
+      setTalents([]);
+      setBio(DEFAULT_BIO);
+      addLog(`GÊNESE INICIADA: NOVO REGISTRO NÍVEL ${startingLevel} PARA ${loginData.name.toUpperCase()}.`, "system");
       addLog(`PONTOS INICIAIS: ${startPA} PA, ${startPP} PP, ${startPT} PT`, "system");
-      setIsGenesisPointsModalOpen(true);
+      setIsZeroAttributeModalOpen(true);
     }
 
 
@@ -195,6 +207,11 @@ function App() {
   };
 
   const handleGainXp = (amount) => {
+    if (level >= 20) {
+      setXp(Math.min(maxXp, xp + amount));
+      return;
+    }
+
     const newXpTotal = xp + amount;
     
     if (newXpTotal >= maxXp) {
@@ -203,7 +220,7 @@ function App() {
       const reward = LEVEL_REWARDS[nextLevel] || { PA: 0, PP: 2, PT: 2 };
       
       setLevel(nextLevel);
-      setXp(remainingXp);
+      setXp(nextLevel >= 20 ? maxXp : remainingXp);
       setPoints(prev => ({
         PA: prev.PA + reward.PA,
         PP: prev.PP + reward.PP,
@@ -218,6 +235,11 @@ function App() {
   };
 
   const handleUpgradeAttribute = (name) => {
+    if (attributes[name] >= 4) {
+      addLog(`LIMITE ALCANÇADO: ${name} JÁ ESTÁ NO NÍVEL 4. SOMENTE IMPLANTES OU FONTES EXTERNAS PODEM ELEVAR ALÉM DISSO.`, "error");
+      return;
+    }
+
     const cost = Formulas.getPACost(attributes[name]);
     if (points.PA >= cost) {
       setAttributes(prev => ({ ...prev, [name]: prev[name] + 1 }));
@@ -229,7 +251,13 @@ function App() {
   };
 
   const handleUpgradeSkill = (name) => {
-    const cost = Formulas.getPPCost(skillBonuses[name]);
+    const currentBonus = skillBonuses[name] || 0;
+    if (currentBonus >= 20) {
+      addLog(`LIMITE ALCANÇADO: ${name} JÁ ESTÁ NO NÍVEL MÁXIMO (+20).`, "error");
+      return;
+    }
+
+    const cost = Formulas.getPPCost(currentBonus);
     if (points.PP >= cost) {
       setSkillBonuses(prev => ({ ...prev, [name]: prev[name] + 1 }));
       setPoints(prev => ({ ...prev, PP: prev.PP - cost }));
@@ -248,6 +276,14 @@ function App() {
     }
     addLog(`ERRO: PONTOS DE TALENTO (PT) INSUFICIENTES.`, "error");
     return false;
+  };
+  
+  const handleSelectZeroAttribute = (attrName) => {
+    const newAttrs = { ...DEFAULT_ATTRIBUTES };
+    newAttrs[attrName] = 0;
+    setAttributes(newAttrs);
+    setIsZeroAttributeModalOpen(false);
+    setIsGenesisPointsModalOpen(true);
   };
 
   const rollDice = (sides = 20, label = "D20", linkedAttrs = []) => {
@@ -309,17 +345,37 @@ function App() {
         setLevel(1);
         setXp(0);
         setPoints({ PA: 0, PP: 0, PT: 0 });
-        setAttributes({ FOR: 1, DES: 1, AGI: 1, VIG: 1, INT: 1, EXP: 0, CAR: 1 });
+        setAttributes(DEFAULT_ATTRIBUTES);
         setTalents([]);
-        setSkillBonuses({
-          'Atletismo': 0, 'Acrobacia': 0, 'Prestidigitação': 0, 'Furtividade': 0,
-          'Dirigir': 0, 'Reflexos': 2, 'Iniciativa': 3, 'Fortitude': 0,
-          'Tecnologia': 5, 'Ciências': 0, 'História': 0, 'Geografia': 0,
-          'Tática': 0, 'Medicina': 0, 'Investigação': 0, 'Percepção': 0,
-          'Intuição': 0, 'Malandragem': 0, 'Manipulação': 0, 'Intimidação': 0
-        });
+        setSkillBonuses(DEFAULT_SKILLS);
+        setBio(DEFAULT_BIO);
         handleLogout();
         addLog("SISTEMA REINICIADO. TODOS OS REGISTROS FORAM APAGADOS.", "system");
+      }
+
+      const cmdParts = commandInput.trim().split(' ');
+      if (cmdParts[0]?.toLowerCase() === '/clear') {
+        const targetName = cmdParts[1];
+        if (targetName) {
+          const keysToRemove = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(`avernus_char_${targetName}_`)) {
+              keysToRemove.push(key);
+            }
+          }
+          
+          keysToRemove.forEach(k => localStorage.removeItem(k));
+          
+          if (keysToRemove.length > 0) {
+            addLog(`SISTEMA: REGISTRO [${targetName.toUpperCase()}] FOI EXCLUÍDO DOS SERVIDORES.`, "system");
+            if (currentUser && currentUser.name.toLowerCase() === targetName.toLowerCase()) {
+              handleLogout();
+            }
+          } else {
+            addLog(`ERRO: NENHUM REGISTRO ENCONTRADO PARA [${targetName.toUpperCase()}].`, "error");
+          }
+        }
       }
 
       setCommandInput('');
@@ -1019,7 +1075,7 @@ function App() {
               min="1"
               max="20"
               value={loginData.startingLevel}
-              onChange={(e) => setLoginData(prev => ({ ...prev, startingLevel: parseInt(e.target.value) || 1 }))}
+              onChange={(e) => setLoginData(prev => ({ ...prev, startingLevel: Math.max(1, Math.min(20, parseInt(e.target.value) || 1)) }))}
               className="text-mono"
               style={{
                 background: 'rgba(0,0,0,0.6)',
@@ -1066,14 +1122,15 @@ function App() {
                 {Object.keys(attributes).map(attr => (
                   <div key={attr} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '0.5rem', border: '1px solid rgba(0,243,255,0.1)' }}>
                     <span className="text-mono" style={{ fontSize: '0.8rem' }}>{attr}: {attributes[attr]}</span>
-                    <button 
-                      className="cyber-button" 
-                      onClick={() => handleUpgradeAttribute(attr)}
-                      disabled={points.PA < Formulas.getPACost(attributes[attr])}
-                      style={{ padding: '2px 8px', fontSize: '0.6rem', minWidth: '60px' }}
-                    >
-                      +{Formulas.getPACost(attributes[attr])} PA
-                    </button>
+                    {attributes[attr] < 4 && points.PA >= Formulas.getPACost(attributes[attr]) && (
+                      <button 
+                        className="cyber-button" 
+                        onClick={() => handleUpgradeAttribute(attr)}
+                        style={{ padding: '2px 8px', fontSize: '0.6rem', minWidth: '60px' }}
+                      >
+                        +{Formulas.getPACost(attributes[attr])} PA
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1086,14 +1143,15 @@ function App() {
                 {Object.keys(skillBonuses).map(skill => (
                   <div key={skill} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '0.5rem', border: '1px solid rgba(0,243,255,0.1)' }}>
                     <span className="text-mono" style={{ fontSize: '0.7rem' }}>{skill}: +{skillBonuses[skill]}</span>
-                    <button 
-                      className="cyber-button" 
-                      onClick={() => handleUpgradeSkill(skill)}
-                      disabled={points.PP < Formulas.getPPCost(skillBonuses[skill])}
-                      style={{ padding: '2px 8px', fontSize: '0.6rem', minWidth: '60px' }}
-                    >
-                      +{Formulas.getPPCost(skillBonuses[skill])} PP
-                    </button>
+                    {skillBonuses[skill] < 20 && points.PP >= Formulas.getPPCost(skillBonuses[skill]) && (
+                      <button 
+                        className="cyber-button" 
+                        onClick={() => handleUpgradeSkill(skill)}
+                        style={{ padding: '2px 8px', fontSize: '0.6rem', minWidth: '60px' }}
+                      >
+                        +{Formulas.getPPCost(skillBonuses[skill])} PP
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1116,6 +1174,45 @@ function App() {
           >
             FINALIZAR_CARREGAMENTO_DE_DADOS
           </button>
+        </div>
+      </Modal>
+
+      {/* Zero Attribute Selection Modal */}
+      <Modal 
+        isOpen={isZeroAttributeModalOpen} 
+        onClose={() => setIsZeroAttributeModalOpen(false)} 
+        title="DEFINIÇÃO_DE_VULNERABILIDADE_BIOLÓGICA"
+        width="800px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <p className="text-mono" style={{ fontSize: '0.8rem', color: 'var(--neon-pink)' }}>
+            TODO REGISTRO EM AVERNUS POSSUI UMA FALHA CRÍTICA. SELECIONE QUAL ATRIBUTO SERÁ SEU PONTO FRACO (NÍVEL 0).
+          </p>
+          <p className="text-mono" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+            TODOS OS OUTROS ATRIBUTOS SERÃO INICIALIZADOS NO NÍVEL 1.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+            {Object.keys(DEFAULT_ATTRIBUTES).map(attr => (
+              <button 
+                key={attr} 
+                className="cyber-button glitch-hover"
+                onClick={() => handleSelectZeroAttribute(attr)}
+                style={{ 
+                  padding: '1.5rem 1rem', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  gap: '0.5rem',
+                  borderColor: 'var(--neon-cyan)',
+                  color: 'var(--neon-cyan)'
+                }}
+              >
+                <span className="header-futuristic" style={{ fontSize: '1rem' }}>{attr}</span>
+                <span className="text-mono" style={{ fontSize: '0.6rem', opacity: 0.7 }}>DEFINIR COMO NÍVEL 0</span>
+              </button>
+            ))}
+          </div>
         </div>
       </Modal>
 

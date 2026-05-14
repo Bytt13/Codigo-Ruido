@@ -20,7 +20,7 @@ const Attribute = ({ icon: Icon, name, value, per, onRoll, onUpgrade, availableP
     }}
     onClick={() => onRoll(name)}
     >
-      {canUpgrade && (
+      {canUpgrade && value < 4 && (
         <button 
           onClick={(e) => { e.stopPropagation(); onUpgrade(name); }}
           className="cyber-button glitch-hover"

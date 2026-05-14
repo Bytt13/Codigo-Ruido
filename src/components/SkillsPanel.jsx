@@ -5,18 +5,11 @@ import * as Formulas from '../utils/formulas';
 
 export function SkillsPanel({ skills, availablePP, availablePT, talents, onUpgradeSkill, onAddTalent, onRoll }) {
   const [search, setSearch] = useState('');
-  const [newTalentName, setNewTalentName] = useState('');
+  const [talentSearch, setTalentSearch] = useState('');
 
   const filteredSkills = SKILLS_DATABASE.filter(s => 
     s.name.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleRegisterTalent = () => {
-    if (newTalentName.trim()) {
-      const success = onAddTalent(newTalentName.trim());
-      if (success) setNewTalentName('');
-    }
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
@@ -66,7 +59,7 @@ export function SkillsPanel({ skills, availablePP, availablePT, talents, onUpgra
                 justifyContent: 'space-between',
                 position: 'relative'
               }}>
-                {canUpgrade && (
+                {canUpgrade && currentBonus < 20 && (
                   <button 
                     onClick={() => onUpgradeSkill(skill.name)}
                     className="cyber-button-mini"
@@ -118,15 +111,42 @@ export function SkillsPanel({ skills, availablePP, availablePT, talents, onUpgra
 
       {/* Talent Section */}
       <div className="cyber-panel cyber-panel-pink" style={{ padding: '1rem' }}>
-        <h2 className="header-futuristic" style={{ fontSize: '0.9rem', color: 'var(--neon-yellow)', marginBottom: '0.8rem' }}>
-          ARQUIVOS_MÉTODO [TALENTOS]
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 className="header-futuristic" style={{ fontSize: '0.9rem', color: 'var(--neon-yellow)' }}>
+            ARQUIVOS_MÉTODO [TALENTOS]
+          </h2>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={14} color="var(--neon-yellow)" style={{ position: 'absolute', left: '8px' }} />
+            <input 
+              type="text" 
+              placeholder="FILTRAR_TALENTOS..."
+              value={talentSearch}
+              onChange={(e) => setTalentSearch(e.target.value)}
+              className="text-mono"
+              style={{
+                background: 'rgba(0,0,0,0.4)',
+                border: '1px solid var(--neon-yellow)',
+                color: 'var(--neon-yellow)',
+                padding: '0.3rem 0.5rem 0.3rem 1.8rem',
+                fontSize: '0.65rem',
+                outline: 'none',
+                width: '180px'
+              }}
+            />
+          </div>
+        </div>
         
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           {talents.length === 0 ? (
               <p className="text-mono" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>NENHUM TALENTO REGISTRADO.</p>
           ) : (() => {
-            const grouped = talents.reduce((acc, t) => {
+            const filteredTalents = talents.filter(t => t.toLowerCase().includes(talentSearch.toLowerCase()));
+            
+            if (filteredTalents.length === 0) {
+              return <p className="text-mono" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>NENHUM RESULTADO ENCONTRADO.</p>;
+            }
+
+            const grouped = filteredTalents.reduce((acc, t) => {
               acc[t] = (acc[t] || 0) + 1;
               return acc;
             }, {});
@@ -145,39 +165,6 @@ export function SkillsPanel({ skills, availablePP, availablePT, talents, onUpgra
             ));
           })()}
         </div>
-
-        {availablePT > 0 && (
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <input 
-              type="text" 
-              placeholder="NOME_DO_TALENTO..."
-              value={newTalentName}
-              onChange={(e) => setNewTalentName(e.target.value)}
-              className="text-mono"
-              style={{
-                flex: 1,
-                background: 'rgba(0,0,0,0.4)',
-                border: '1px solid var(--neon-yellow)',
-                color: 'var(--neon-yellow)',
-                padding: '0.4rem 0.5rem',
-                fontSize: '0.7rem',
-                outline: 'none'
-              }}
-            />
-            <button 
-              className="cyber-button"
-              onClick={handleRegisterTalent}
-              style={{ 
-                borderColor: 'var(--neon-yellow)', 
-                color: 'var(--neon-yellow)',
-                fontSize: '0.6rem',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Gastar 1 PT
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
